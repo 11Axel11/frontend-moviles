@@ -1,8 +1,33 @@
-import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
+import 'dart:async';
 
-class SplashScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../restaurantes/screens/restaurantes_screen.dart';
+
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const RestaurantesScreen(),
+        ),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,7 +35,6 @@ class SplashScreen extends StatelessWidget {
       backgroundColor: AppColors.blackElegant,
       body: Stack(
         children: [
-          // Imagen de fondo
           Positioned.fill(
             child: Image.asset(
               'assets/images/splash_bg.png',
@@ -18,14 +42,12 @@ class SplashScreen extends StatelessWidget {
             ),
           ),
 
-          // Capa oscura para mejorar contraste
           Positioned.fill(
             child: Container(
               color: Colors.black.withValues(alpha: 0.45),
             ),
           ),
 
-          // Degradado oscuro tipo premium
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -42,7 +64,6 @@ class SplashScreen extends StatelessWidget {
             ),
           ),
 
-          // Logo centrado
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -54,7 +75,6 @@ class SplashScreen extends StatelessWidget {
             ),
           ),
 
-          // Indicador de carga
           const Positioned(
             bottom: 64,
             left: 0,
