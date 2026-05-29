@@ -3,6 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/restaurantes_mock_data.dart';
 import '../models/restaurante.dart';
 import '../widgets/restaurante_card.dart';
+import 'restaurante_detalle_screen.dart';
 
 class RestaurantesScreen extends StatefulWidget {
   const RestaurantesScreen({super.key});
@@ -17,9 +18,8 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
 
   List<Restaurante> get restaurantesFiltrados {
     return restaurantesMock.where((restaurante) {
-      final coincideBusqueda = restaurante.nombre
-              .toLowerCase()
-              .contains(busqueda.toLowerCase()) ||
+      final coincideBusqueda =
+          restaurante.nombre.toLowerCase().contains(busqueda.toLowerCase()) ||
           restaurante.ubicacion.toLowerCase().contains(busqueda.toLowerCase());
 
       final coincideFiltro = switch (filtroSeleccionado) {
@@ -165,10 +165,12 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
                           return RestauranteCard(
                             restaurante: restaurante,
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Seleccionaste ${restaurante.nombre}',
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      RestauranteDetalleScreen(
+                                    restaurante: restaurante,
                                   ),
                                 ),
                               );
