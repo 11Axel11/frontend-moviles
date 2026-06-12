@@ -6,6 +6,7 @@ import '../widgets/mesas_grid.dart';
 import '../widgets/horario_selector.dart';
 import '../widgets/personas_selector.dart';
 import '../widgets/continuar_button.dart';
+import 'reserva_confirmacion_screen.dart';
 
 class CrearReservaScreen extends StatefulWidget {
   final Restaurante restaurante;
@@ -74,51 +75,26 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   }
 
   void confirmarReserva() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.blackElegant,
-          title: const Text(
-            'Reserva confirmada',
-            style: TextStyle(
-              color: AppColors.softWhite,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            'Tu reserva en ${widget.restaurante.nombre} fue registrada.\n\n'
-            'Mesa: $mesaSeleccionada\n'
-            'Hora: $horaSeleccionada\n'
-            'Personas: $cantidadPersonas',
-            style: const TextStyle(
-              color: AppColors.lightGray,
-              height: 1.4,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cerrar',
-                style: TextStyle(color: AppColors.goldPremium),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.goldPremium,
-                foregroundColor: AppColors.blackElegant,
-              ),
-              child: const Text('Aceptar'),
-            ),
-          ],
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReservaConfirmacionScreen(
+          restaurante: widget.restaurante,
+          fecha: '${fechaSeleccionada.day} ${_getMonthName(fechaSeleccionada.month)}, ${fechaSeleccionada.year}',
+          hora: horaSeleccionada,
+          mesa: mesaSeleccionada!,
+          personas: cantidadPersonas,
+        ),
+      ),
     );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+    return months[month - 1];
   }
 
   @override
