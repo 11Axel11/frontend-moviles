@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend_moviles/modules/reservas/widgets/notificaciones_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../restaurantes/models/restaurante.dart';
 import '../models/mesa.dart';
@@ -10,10 +11,7 @@ import '../widgets/continuar_button.dart';
 class CrearReservaScreen extends StatefulWidget {
   final Restaurante restaurante;
 
-  const CrearReservaScreen({
-    super.key,
-    required this.restaurante,
-  });
+  const CrearReservaScreen({super.key, required this.restaurante});
 
   @override
   State<CrearReservaScreen> createState() => _CrearReservaScreenState();
@@ -42,17 +40,14 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
   }
 
   void _generarMesas() {
-    mesas = List.generate(
-      9,
-      (index) {
-        final numero = index + 1;
-        if (numero <= widget.restaurante.mesasDisponibles) {
-          return Mesa(numero: numero, estado: MesaEstado.disponible);
-        } else {
-          return Mesa(numero: numero, estado: MesaEstado.ocupada);
-        }
-      },
-    );
+    mesas = List.generate(9, (index) {
+      final numero = index + 1;
+      if (numero <= widget.restaurante.mesasDisponibles) {
+        return Mesa(numero: numero, estado: MesaEstado.disponible);
+      } else {
+        return Mesa(numero: numero, estado: MesaEstado.ocupada);
+      }
+    });
   }
 
   void _seleccionarMesa(int numero) {
@@ -91,28 +86,31 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
             'Mesa: $mesaSeleccionada\n'
             'Hora: $horaSeleccionada\n'
             'Personas: $cantidadPersonas',
-            style: const TextStyle(
-              color: AppColors.lightGray,
-              height: 1.4,
-            ),
+            style: const TextStyle(color: AppColors.lightGray, height: 1.4),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pop(context);
+              },
               child: const Text(
                 'Cerrar',
-                style: TextStyle(color: AppColors.goldPremium),
+                style: TextStyle(color: AppColors.softWhite),
               ),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
+                Navigator.pop(context); // línea ~89 aprox.
+
+                // ✅ AQUÍ agregas la notificación, justo antes o después del Navigator.pop
+                NotificationService.showBookingConfirmation(
+                  restaurantName: widget.restaurante.nombre,
+                  date:
+                      '${fechaSeleccionada.day}/${fechaSeleccionada.month}/${fechaSeleccionada.year} a las $horaSeleccionada',
+                );
+
+                Navigator.pop(context); // regresa a la pantalla anterior
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.goldPremium,
-                foregroundColor: AppColors.blackElegant,
-              ),
               child: const Text('Aceptar'),
             ),
           ],
@@ -136,10 +134,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
           children: [
             const Text(
               'Selecciona Mesa y Horario',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             Text(
               widget.restaurante.nombre,
@@ -158,10 +153,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              MesasGrid(
-                mesas: mesas,
-                onMesaSeleccionada: _seleccionarMesa,
-              ),
+              MesasGrid(mesas: mesas, onMesaSeleccionada: _seleccionarMesa),
               const SizedBox(height: 32),
               HorarioSelector(
                 horasDisponibles: horasDisponibles,
