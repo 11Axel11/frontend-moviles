@@ -4,6 +4,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_format.dart';
+import '../widgets/notificaciones_service.dart';
 import '../../restaurantes/models/restaurante.dart';
 import '../../usuarios/state/usuario_session.dart';
 import '../data/mesa_repository.dart';
@@ -109,6 +110,10 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
         hora: _hora,
         horaFin: addMinutesToTime(_hora, 30),
         cantidadPersonas: _personas,
+      );
+      await NotificationService.showBookingConfirmation(
+        restaurantName: widget.restaurante.nombre,
+        date: '${displayDate(_fecha)} a las $_hora',
       );
       if (!mounted) return;
       await Navigator.pushReplacement(
