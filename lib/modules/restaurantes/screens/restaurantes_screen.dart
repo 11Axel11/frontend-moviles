@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
-import '../data/restaurantes_mock_data.dart';
+import '../data/restaurante_repository.dart';
 import '../models/restaurante.dart';
 import '../widgets/restaurante_card.dart';
 import 'restaurante_detalle_screen.dart';
@@ -13,208 +16,140 @@ class RestaurantesScreen extends StatefulWidget {
 }
 
 class _RestaurantesScreenState extends State<RestaurantesScreen> {
-  String filtroSeleccionado = 'Todos';
-  String busqueda = '';
+  final _api = ApiClient();
+  late final _repository = RestauranteRepository(_api);
+  final _searchController = TextEditingController();
+  List<Restaurante> _restaurantes = const [];
+  String _filtro = 'Todos';
+  String _busqueda = '';
+  bool _cargando = true;
+  String? _error;
 
-  List<Restaurante> get restaurantesFiltrados {
-    return restaurantesMock.where((restaurante) {
-      final coincideBusqueda =
-          restaurante.nombre.toLowerCase().contains(busqueda.toLowerCase()) ||
-          restaurante.ubicacion.toLowerCase().contains(busqueda.toLowerCase());
-
-      final coincideFiltro = switch (filtroSeleccionado) {
-        'Abiertos' => restaurante.abierto,
-        'Disponibles' => restaurante.mesasDisponibles > 0,
-        _ => true,
-      };
-
-      return coincideBusqueda && coincideFiltro;
-    }).toList();
+  @override
+  void initState() {
+    super.initState();
+    _cargarRestaurantes();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final restaurantes = restaurantesFiltrados;
+  void dispose() {
+    _searchController.dispose();
+    _api.dispose();
+    super.dispose();
+  }
 
+  Future<void> _cargarRestaurantes() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+    try {
+      final restaurantes = await _repository.listar();
+      if (!mounted) return;
+      setState(() {
+        _restaurantes = restaurantes;
+        _cargando = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.message;
+        _cargando = false;
+      });
+    }
+  }
+
+  List<Restaurante> get _filtrados => _restaurantes.where((restaurante) {
+        final texto = _busqueda.toLowerCase();
+        final coincideTexto = restaurante.nombre.toLowerCase().contains(texto) ||
+            restaurante.ubicacion.toLowerCase().contains(texto);
+        final coincideFiltro = switch (_filtro) {
+          'Disponibles' => restaurante.mesasDisponibles > 0,
+          _ => true,
+        };
+        return coincideTexto && coincideFiltro;
+      }).toList();
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.softWhite,
-      appBar: AppBar(
-        title: const Text(
-          'TableNow',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+      appBar: AppBar(title: const Text('TableNow')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Reserva tu mesa',
-                style: TextStyle(
-                  color: AppColors.blackElegant,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
+              const Text('Reserva tu mesa', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
-
-              const Text(
-                'Encuentra restaurantes disponibles cerca de ti.',
-                style: TextStyle(
-                  color: AppColors.darkGray,
-                  fontSize: 15,
-                ),
-              ),
-
+              const Text('Encuentra restaurantes disponibles cerca de ti.'),
               const SizedBox(height: 20),
-
               TextField(
-                onChanged: (value) {
-                  setState(() {
-                    busqueda = value;
-                  });
-                },
+                controller: _searchController,
+                onChanged: (value) => setState(() => _busqueda = value),
                 decoration: InputDecoration(
                   hintText: 'Buscar restaurante o ubicación',
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: AppColors.darkGray,
-                  ),
+                  prefixIcon: const Icon(Icons.search),
                   filled: true,
                   fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  enabledBorder: OutlineInputBorder(
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: AppColors.lightGray,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: AppColors.goldPremium,
-                      width: 1.5,
-                    ),
+                    borderSide: const BorderSide(color: AppColors.lightGray),
                   ),
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _FiltroChip(
-                      label: 'Todos',
-                      seleccionado: filtroSeleccionado == 'Todos',
-                      onTap: () {
-                        setState(() {
-                          filtroSeleccionado = 'Todos';
-                        });
-                      },
-                    ),
-                    _FiltroChip(
-                      label: 'Abiertos',
-                      seleccionado: filtroSeleccionado == 'Abiertos',
-                      onTap: () {
-                        setState(() {
-                          filtroSeleccionado = 'Abiertos';
-                        });
-                      },
-                    ),
-                    _FiltroChip(
-                      label: 'Disponibles',
-                      seleccionado: filtroSeleccionado == 'Disponibles',
-                      onTap: () {
-                        setState(() {
-                          filtroSeleccionado = 'Disponibles';
-                        });
-                      },
-                    ),
-                  ],
-                ),
+              Wrap(
+                spacing: 10,
+                children: ['Todos', 'Disponibles'].map((filtro) {
+                  return ChoiceChip(
+                    label: Text(filtro),
+                    selected: _filtro == filtro,
+                    onSelected: (_) => setState(() => _filtro = filtro),
+                    selectedColor: AppColors.goldPremium,
+                  );
+                }).toList(),
               ),
-
               const SizedBox(height: 20),
-
-              Expanded(
-                child: restaurantes.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No se encontraron restaurantes.',
-                          style: TextStyle(
-                            color: AppColors.darkGray,
-                            fontSize: 15,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: restaurantes.length,
-                        itemBuilder: (context, index) {
-                          final restaurante = restaurantes[index];
-
-                          return RestauranteCard(
-                            restaurante: restaurante,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      RestauranteDetalleScreen(
-                                    restaurante: restaurante,
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-              ),
+              Expanded(child: _buildBody()),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-class _FiltroChip extends StatelessWidget {
-  final String label;
-  final bool seleccionado;
-  final VoidCallback onTap;
-
-  const _FiltroChip({
-    required this.label,
-    required this.seleccionado,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: seleccionado,
-        onSelected: (_) => onTap(),
-        selectedColor: AppColors.goldPremium,
-        backgroundColor: Colors.white,
-        labelStyle: TextStyle(
-          color: seleccionado ? AppColors.blackElegant : AppColors.darkGray,
-          fontWeight: seleccionado ? FontWeight.bold : FontWeight.normal,
+  Widget _buildBody() {
+    if (_cargando) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_error!, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: _cargarRestaurantes, child: const Text('Reintentar')),
+          ],
         ),
-        side: BorderSide(
-          color: seleccionado ? AppColors.goldPremium : AppColors.lightGray,
-        ),
+      );
+    }
+    final restaurantes = _filtrados;
+    if (restaurantes.isEmpty) return const Center(child: Text('No se encontraron restaurantes.'));
+    return RefreshIndicator(
+      onRefresh: _cargarRestaurantes,
+      child: ListView.builder(
+        itemCount: restaurantes.length,
+        itemBuilder: (context, index) {
+          final restaurante = restaurantes[index];
+          return RestauranteCard(
+            restaurante: restaurante,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => RestauranteDetalleScreen(restaurante: restaurante)),
+            ),
+          );
+        },
       ),
     );
   }
